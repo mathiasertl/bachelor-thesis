@@ -1,0 +1,37 @@
+% preface to tunix.tex
+
+% general information:
+\documentclass[12pt,a4paper,oneside,openany]{book}
+\title{\tunix Documentation}
+\author{Mathias Ertl \email{mati@pluto.htu.tuwien.ac.at}
+	\and Florian Cech \email{loki@pluto.htu.tuwien.ac.at}}
+\date{\today}
+\pagestyle{headings}
+
+% encoding:
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[OT1,T1]{fontenc}
+\usepackage{ae,aecompl}
+
+%\usepackage{ncclatex}
+\usepackage{listings} % highlighting
+\usepackage{caption} % dependency of listings
+\usepackage{todo}
+\renewcommand \lstlistlistingname{Code examples}
+\renewcommand \lstlistingname{code example}
+\lstset{numbers=left, numberstyle=\tiny, stepnumber=2, numbersep=5pt, frame=single, language=bash, mathescape=true, float=ht, basicstyle=\small}
+
+% new commands:
+\newcommand{\tunix}{TUn!x }
+\newcommand{\email}[1]{$<$\href{mailto:#1}{#1}$>$}
+\newcommand{\cmd}[1]{{\small \texttt{#1}}}
+\newcommand{\file}[1]{{\small \textsf{#1}}}
+
+\hyphenation{PURGATHOFER MATHIAS}
+
+% has to be the last in the preamble:
+\usepackage[pdftex,unicode=true,colorlinks=true,%
+        bookmarks=true,bookmarksnumbered,%
+        pdftitle={\tunix Documentation},pdfauthor={Mathias Ertl, Florian Cech}%
+	        pdfsubject={Documentation for the \tunix project}]{hyperref}

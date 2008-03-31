@@ -1,0 +1,188 @@
+% live-modifications for tunix.tex
+
+\chapter{Modifications to the live-CD}\label{chapter:modifications}
+
+\section{APT}
+The \tunix apt repository had to be integrated into the \tunix live-CD so that
+the users will actually use the new repository. This requires only two steps:
+\begin{enumerate}
+  \item sources.list: \file{/etc/apt/sources.list} has to be modified to include
+    the repository. In the \tunix distribution the file includes the
+    line\footnote{the domain apt.fsinf.at could have been used instead, but
+    wasn't available at the time of shipping.}
+    \begin{quote}deb http://pluto.htu.tuwien.ac.at/apt main\end{quote}
+  \item gpg key: the public gpg key used for signing the repository has to be
+    known to apt to accept it. This can be done with the simple command
+    \cmd{apt-key add pubkey.gpg} where \file{pubkey.gpg} is the public key.
+\end{enumerate}
+
+\section{Mozilla Firefox}
+Mozilla Firefox, the standard webbrowser of Ubuntu/\tunix, was modified so that
+it includes bookmarks to the websites that are most important for any computer
+science student. You can very simply change the bookmarks if you use the
+following trick: Boot the live-CD, start Firefox, adjust the bookmarks to your
+liking and copy the bookmarks file (located at
+\file{$\sim$/.mozilla/firefox/\$something.default/bookmarks.html}, where
+\$something is a randomly generated string) to \file{/etc/firefox/profile} in
+the SquashFS.
+
+\section{USplash}
+USplash is used to view a nice image instead of the hundreds of lines of output
+from the kernel while booting and shutting down \tunix. Some unofficial
+documentation is available at \cite{USplashCustomizationHowto}, but USplash is
+otherwise poorly documented. 
+
+The first step is to create a PNG image file that you want displayed when
+booting/shutting down. It has to be an indexed PNG with 16 colors\footnote{note
+that this seems to violate the PNG standard, but GIMP is able to create such
+files} with 640x400 pixels (not, as the documentation states, 640x4\textbf{8}0).
+The colors used in the index are also the colors used in the dynamic elements
+(progress bar, etc.) of the splashscreen. The following table describes what
+positions of the index are used for which elements:\\
+
+\begin{tabular}[ht]{|c|p{11cm}|}
+\hline
+\textbf{index} & \textbf{what its used for} \\ \hline
+0 & background of the text output \\ \hline
+1 & progress bar \\ \hline
+2 & status message of init-scripts ("[ok]" most of the time) \\ \hline
+4 & background of the progress bar \\ \hline
+8 & text on the left side of the output used by the init-scripts to tell what
+they are doing \\ \hline
+13 & error output in the text-field (to try this out: don't create any md5sums)
+\\ \hline
+\end{tabular}\\\\
+
+Next, the PNG has to be converted into an shared object file (suffix .so). This
+is achieved by converting the PNG into a bogl file (bogle is a subset of the C
+programming language) using \cmd{pngtobogl} (available in the package
+libbogl-dev) and then compiling it into a shared object file using \cmd{gcc}.
+The process is described in \lstlistingname{} \ref{code:png to so} (p.
+\pageref{code:png to so}).
+\begin{lstlisting}[float=ht,label=code:png to so,caption=Converting a PNG to a
+shared object]
+$\sim$/tunix $\$$ pngtobogl new-splash.png > new-splash.c 
+$\sim$/tunix $\$$ gcc -Os -g -I/usr/include/bogl -fPIC -c \
+	new-splash.c -o new-splash.o
+$\sim$/tunix $\$$ gcc -shared -Wl,-soname,usplash-artwork.so \
+	new-splash.o -o new-splash.so
+$\sim$/tunix $\$$ strip --strip-unneeded new-splash.so
+$\sim$/tunix $\$$ rm new-splash.[co]
+\end{lstlisting}
+
+Sadly, the process is not always that simple. At least in the version available
+08/2006, \cmd{pngtobogl} created a buggy file where all the first (0) and second
+(1) entries in the palette were flipped, causing the picture to be partly inverted.
+This can be fixed with a few simple \cmd{sed} scripts, but is a source of
+frustration.
+
+To get the live-CD use the new image it is necessary to unpack the inital
+RAM-disc (\file{initrd.gz}) of the kernel found on the live-CD, replace the .so
+file and repack the initial RAM-disc. The procedure is described in
+\lstlistingname{} \ref{code:initrd live} (p. \pageref{code:initrd live}). 
+\begin{lstlisting}[float=ht,label=code:initrd live,caption=Replacing the
+splashscreen on the live-CD]
+$\sim$/tunix $\$$ mkdir tmp
+$\sim$/tunix $\$$ cp live-cd/casper/initrd.gz tmp/
+$\sim$/tunix $\$$ cd tmp/
+
+# unpack the RAM disc:
+$\sim$/tunix/tmp $\$$ cat initrd.gz | gzip -d | cpio -i
+$\sim$/tunix/tmp $\$$ rm initrd.gz 
+
+# replace the splash-image
+$\sim$/tunix/tmp $\$$ cp ../new-splash.so \ 
+	usr/lib/usplash/usplash-artwork.so
+
+# rebuild the ram disc:
+$\sim$/tunix/tmp $\$$ find | cpio -H newc -o \
+	| gzip > ../live-cd/casper/initrd.gz
+\end{lstlisting}
+
+To make the installed system use the splashscreen, you have to use a different
+approach that makes use of debians \cmd{update-alternatives} system. You have to
+\cmd{chroot} into the unpacked SquashFS, for which we use the script chroot.sh
+that does the chrooting process as defined in chapter \ref{chapter:CD
+remastering} (p. \pageref{chapter:CD remastering}). The process is described in
+\lstlistingname{} \ref{code:initrd install} (p. \pageref{code:initrd install}).
+Line 10 is particulary interesting: most tutorials suggest using
+\cmd{dpkg-reconfigure linux-image-\$(uname -r)} but this won't work since
+\cmd{uname -r} will return the version of the kernel installed on \emph{your}
+system, not the one in the SquashFS. To find out which kernel-version is
+installed in the SquashFS you can use the command \cmd{dpkg-query -W |
+grep linux-image}.
+\begin{lstlisting}[float=ht,label=code:initrd install,caption=Replacing the
+splashscreen on the installed system]
+$\sim$/tunix $\$$ cp new-splash.so \
+	squashfs/usr/lib/usplash/usplash-tunix.so
+$\sim$/tunix $\$$ ./chroot.sh
+$\sim$ # cd /usr/lib/usplash
+/usr/lib/usplash # update-alternatives --install \
+	/usr/lib/usplash/usplash-artwork.so \
+	usplash-artwork.so \
+	/usr/lib/usplash/usplash-tunix.so 55
+$\sim$ # update-alternatives --config usplash-artwork.so
+$\sim$ # dpkg-reconfigure linux-image-2.6.15-23-386
+\end{lstlisting}
+
+\section{VPNC}
+Two extra configuration files for VPNC where added to the live-CD, one for use
+in the WLAN of the Technical University of Vienna (\file{/etc/vpnc.wlan.conf})
+and one if you want to use VPN from outside of the university network
+(\file{/etc/vpnc.conf}).
+\begin{lstlisting}[float=ht,label=code:vpnc.conf,caption=VPNC config-file for
+use from outside of the University]
+# this is the vpnc config file is used if you connect from
+# outside of the # Technical University, i.e. to encrypt
+# your connection over an open WLAN.
+
+Interface name vpntun0
+IPSec gateway terminator.tuwien.ac.at
+IPSec ID vpncclient
+IPSec secret vpnc2tu
+# enter your "Matrikelnummer" here and uncomment the
+# following line:
+#Xauth username e0123456@vpn.tuwien.ac.at
+# It is also to put your password here, but be aware of the
+# security impliciations of having your password in
+# plaintext in a file.
+#Xauth password blabla
+Debug 1
+\end{lstlisting}
+
+\begin{lstlisting}[float=ht,label=code:vpnc.wlan.conf,caption=VPNC config-file for
+use in the TU of Vienna WLAN]
+# This config file is used if you want to encrypt your
+# connection from inside the Technical University (wlan
+# or ethernet).
+
+Interface name vpntun0
+IPSec gateway terminator.demo.tuwien.ac.at
+IPSec ID vpncmobil
+IPSec secret mobilviavpnc
+# enter your "Matrikelnummer" here and uncomment the
+# following line:
+#Xauth username e0123456@mobil.tuwien.ac.at
+Debug 1
+\end{lstlisting}
+
+\section{GNU Screen}
+In \tunix, GNU Screen uses UTF8 per default and displays a fancy "window bar" at
+the bottom of the screen to improve navigation. This is achieved by an
+additional file \file{/etc/skel/.screenrc}. The contents of the \cmd{/etc/skel}
+directory are usually copied into newly created home-directories.
+
+Please note that the last line is split into two lines in \lstlistingname{}
+\ref{code:screenrc} for typesetting reasons, but this has to be one line in an
+actual file.
+\begin{lstlisting}[float=ht,label=code:screenrc,caption=Additional configuration
+for GNU Screen]
+# TUn!x: make screen use utf8:
+defutf8 on
+# TUn!x: adds the "window-bar" on the bottom:
+hardstatus alwayslastline \
+"%{= BY}%-Lw%{= YB}%50>%n%f* %t%{= BY}%+Lw%<%= %m/%d %c"
+\end{lstlisting}
+
+%\section{Gnome/GTK+/GDM}
+%\todo{describe the changes}

@@ -1,0 +1,132 @@
+% introduction for tunix.tex
+
+\chapter{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% The idea behind TUn!x %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The idea behind \tunix}
+The original idea for \tunix was born out of the problem that computer science
+students in their first semester had to set up their computers with a special
+version of the Java software together with a specialized library for their
+first-semester introductory course in programmming. Since quite a few students
+who enroll have never seriously used a computer before, this proved difficult
+for many and therefore represented an additional barrier for becoming a computer
+science student (and graduate).
+
+Additionally, it was observed that many students never use a Unix-style
+environment out of fear that it is too hard to set up and in-depth knowledge of
+the command-line is necessary, even for everyday tasks. Sometimes students go to
+great lengths to avoid using Linux, even to the point were students choose their
+branch of study based on the requirement for the use of Linux. The thought that
+some students graduate with a bachelors degree without ever having used anything
+but Microsoft Windows is troublesome, to say the least.\\
+
+Thus, the idea for \tunix was born. \tunix is a bootable and installable Linux
+live-CD based on Ubuntu that allows you to boot your PC with a full Linux system
+that doesn't touch your harddisk(s), eliminating the risk of data-loss. The
+designated goal of \tunix is to provide a ready-to-use Linux environment that
+requires the least-possible knowledge of Linux to run, taking into account that
+it would be run exclusively by first-semester students of the Technical
+University of Vienna.
+
+The \tunix live-CD includes all the software students could need in their first
+semesters. The software-versions are coordinated with the environment used in the
+courses, to keep problems with differing software-versions at a minimum.
+Installed software is customized so it has more useful defaults, making it
+easier to use.
+
+The first release of \tunix was made in time for the wintersemester 2005/06 and
+was based on Ubuntu 5.04. The second release, documented here, was released in
+time for the wintersemester 2006/07 and is based on Ubuntu 6.06.1. It brings
+many improvements over the first version and is the first version where the
+\tunix CD is actually installable (the previous version didn't come with an
+installer). See chapter \ref{changes-overview} on page \pageref{changes-overview}
+for what has changed compared to Ubuntu for this release.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TUn!x is based on other projects %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\tunix is based on other projects}
+As with most free software projects, \tunix would not be possible without the
+work of many other free software projects. This chapter is dedicated to
+mentioning these projects.\\
+
+\tunix itself is based entirely on Ubuntu\footnote{\href{http://www.ubuntu.com}%
+{http://www.ubuntu.com}}, which is in turn mostly based on the Debian\footnote{%
+\href{http://www.debian.org}{http://www.debian.org}} Linux distribution. With
+that lineage comes the use of the DPKG and APT packet management systems.
+
+The web presence of \tunix is based on MediaWiki\footnote{\href{%
+http://www.mediawiki.org}{http://www.mediawiki.org}}, the free Wiki-software
+originally developed for Wikipedia\footnote{\href{http://www.wikipedia.org}%
+{http://www.wikipedia.org}}. Several 3\textsuperscript{rd}-party extensions are installed on
+the \tunix homepage, for a complete list please refer to
+Spezial:Version\footnote{\href{http://pluto.htu.tuwien.ac.at/Spezial:Version}{%
+http://pluto.htu.tuwien.ac.at/Spezial:Version}}.
+
+Software used for developing \tunix includes Subversion\footnote{\href{%
+http://subversion.tigris.org}{http://subversion.tigris.org}},
+VMware\footnote{\href{http://www.vmware.com}{http://www.vmware.com}} and of
+course the package building tools for Debian based distributions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% A list of the changes made %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{A list of the changes made}\label{changes-overview}
+\tunix features many improvements over Ubuntu, a short overview is given here:
+\begin{description}
+   \item[Installed software:] The following software-packages are preinstalled in \tunix
+   but not in Ubuntu:
+     \begin{itemize}
+       \item \textbf{sun-java5-sdk:} The official Sun Java development kit as used in
+         the courses "Einführung ins Programmieren"\footnote{Introduction to %
+	 programming} and "Algorithmen und Datenstrukturen"\footnote{Algorithms
+	 and data structures}.
+       \item \textbf{postgresql-8.1:} PostgreSQL is used in "Datenmodellierung"
+         \footnote{Data modeling}.
+       \item \textbf{dia:} Dia is also used in "Datenmodellierung" 
+       \item \textbf{vpnc:} This Cisco-compatible VPN client can be used to make a
+         secure Virtual Private Network connection to the university.
+       \item \textbf{gajim:} A Jabber-client that has more features than
+         gaim\footnote{Gaim is the previous name of the software now known as
+         pidgin}.
+       \item \textbf{sysv-rc-conf:} A simple ncurses-based tool to easily
+         configure your init-scripts.
+     \end{itemize}
+   \item[Removed software:] The following software was removed from the \tunix
+   live-CD:
+     \begin{itemize}
+       \item \textbf{example-content:} Only contains a few videos and eats up a
+         lot of space.
+       \item \textbf{gaim:} Replaced by gajim (see above).
+       \item \textbf{thunderbird-locale-en-gb} and \textbf{openoffice.org-l10n-en-za}
+         and the meta-packages depending on them, \textbf{language-support-en} and
+	 \textbf{ubuntu-live}.
+       \item \textbf{Windows software:} The Ubuntu live-CD contains some free Windows
+         software that was removed on the \tunix version.
+     \end{itemize}
+   \item[Updated software:] The entire software was updated to the most recent
+     version (as of 2006-09-12) found in the Ubuntu repositories. 
+   \item[Configuration changes:] Several packages had their default
+     configuration changed (see chapter \ref{chapter:modifications}, p. 
+     	\pageref{chapter:modifications} for a detailed description of how to make
+	these changes):
+     \begin{itemize}
+       \item \textbf{apt:} The Apt package management system also downloads from
+         the \tunix apt-repository. This allows us to issue updates to software
+	 and configuration coming from us.
+       \item \textbf{gnome/gtk/gdm:} The Gnome desktop environment, the Gnome
+         display manager and the GTK+ graphics toolkit all feature a unique
+	 theme.
+       \item \textbf{firefox:} The Firefox webbrowser has customized bookmarks
+         linking to the essential websites a student should know about.
+       \item \textbf{screen:} GNU Screen uses UTF8 per default and most
+         importantly has a nice taskbar at the bottom.
+       \item \textbf{vpnc:} Example configuration files for use with the WLAN at
+         the university and from outside of the university are available in the
+	 \file{/etc}-directory.
+       \item \textbf{usplash:} Usplash is responsible for the splash-screen
+         shown during boot and displays the \tunix-tux instead of the Ubuntu
+	 logo.
+     \end{itemize}
+\end{description}

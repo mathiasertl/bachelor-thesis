@@ -1,0 +1,514 @@
+% package-management for tunix.tex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package Management %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Package management}
+Debian, and thus Ubuntu, and thus \tunix is based on two package management
+systems working together:
+\begin{description}
+  \item[dpkg,] or Debian Package Management System, is used to locally install
+    packages called \emph{.deb packages} (see section \ref{chapter:deb packages%
+    }, p. \pageref{chapter:deb packages}). It is unable to resolve dependencies
+    or get new packages from the internet and can only handle files
+    available locally. The enduser rarely interacts with dpkg directly.
+  \item[apt,] or \textbf{A}dvanced \textbf{P}ackaging \textbf{T}ool, is used to
+    complement dpkg. Apt is able to interact with central (possibly remote)
+    sources for new and updated software, called \emph{apt-repositories} (see
+    section \ref{chapter:apt repositories}, p. \pageref{chapter:apt %
+    repositories}) and is able to automatically resolve dependencies.
+    
+    Apt itself never installs the software itself, but uses a
+    dpkg as a backend\footnote{Note that while the most common backend is dpkg,
+    there are also different backends available, most notably for the Redhat
+    Package Management system.} to install software. Many more experienced
+    users use apt directly to install software but there are also many
+    easy-to-use graphical frontends available.
+\end{description}
+This software team is at the heart of every Debian based Linux distribution,
+in fact, the term "Debian based" is normally used to describe "based on
+dpkg/apt"\footnote{One could distinguish between "Debian based" and "dpkg/apt
+based", though. A dpkg/apt based distribution doesn't necessarily include
+packages coming from the Debian project, but Debian based distributions (hence
+the name) do. Ubuntu and thus \tunix both include a great number of debian
+packages.}.
+
+%%%%%%%%%%%%%%%%%%%%%
+%%% .deb packages %%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{.dep packages}\label{chapter:deb packages}
+.deb Packages are single files (file suffix is .deb) containing a software
+package. Binary packages are used by dpkg, the Debian Package Manager, to
+install new software, source packages are not directly installed but can be
+fetched from apt-repositories using \cmd{apt-get source \$package}. 
+There are three kinds of packages:
+\begin{description}
+  \item[source packages] contain the original source in human-readable form
+    together with a little meta information. Source packages frequently come
+    with additional patches. These packages are used to generate binary
+    packages and also enable the user to compile the software themselves (e.g.
+    with different compiler flags).
+  \item[binary packages] usually contain software in a ready-to-use (e.g.
+    compiled) form. These are the packages usually installed (indirectly,
+    through apt) by the user. Note that often multiple binary packages come from
+    one source package.
+  \item[meta packages] are specialized binary packages that contain no software
+    but only dependency information. They are useful for distributing a set of
+    software. The most prominent example of such a package is the package
+    \emph{ubuntu-desktop} that depends on all software that comes with Ubuntu.
+\end{description}
+
+This section explains how .deb packages are structured, how to build new
+binary packages either from scratch or by modifying existing ones. \emph{But}
+one important aspect of real-world package maintenance is left out: We don't
+explain how binary packages are automatically generated from source packages or
+how source packages in general work. This process was not required for \tunix,
+since it contains no packages that have to be compiled into a binary
+form\footnote{Almost: The \tunix Usplash image is actually a PNG image file that
+is compiled to a shared object, but we saw no use in creating a source package
+together with an additional repository when simply publishing the original PNG
+would do the same job.}. Therefore, the following subsections refer to binary
+packages exclusivly except where explicitly mentioned.
+
+Official and more complete documentation on how .deb packages work is available 
+in the Debian Policy Manual\cite{debian policy manual} and the Debian New
+Maintainers Guide\cite{debian new maintainers guide}.
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% Basic structure %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Basic structure}
+.deb packages are a relatively simple \emph{ar archive} that can be unpacked using the
+tool with the same name. The process is explained in \lstlistingname{} \ref{code:%
+deb-unpack} (p. \pageref{code:deb-unpack}).
+\begin{lstlisting}[label={code:deb-unpack},caption={Unpacking a .deb package using
+ar},float=ht]
+$\sim$/package $\$$ ar xf tunix_1.0.0-1_i386.deb
+$\sim$/package $\$$ ls
+data.tar.gz debian.tar.gz debian-binary
+\end{lstlisting}
+
+The file name of the package \emph{must} follow the following convention:
+\begin{quote}
+    \$softwarename\_\$version\_\$arch.deb
+\end{quote}
+in which \$softwarename is the name of the package, \$version is the version of
+the software (the part after the first '-' represents the version of the
+package itself) and \$arch the architecture the package is for. (The special
+string 'all' is used for packages that work on all supported plattforms.)
+
+As shown in \lstlistingname{} \ref{code:deb-unpack} (p. \pageref{code:%
+deb-unpack}) a .deb package contains \emph{exactly} three files:
+\begin{description}
+  \item[\file{data.tar.gz}] contains the files as they will be extracted onto the
+    filesystem hierarchy. The contents of this archive depend mainly on the
+    original software but must also contain some documentation from the package
+    maintainer. The requirements are described in section \ref{subsection:%
+    installation files} (p. \pageref{subsection:installation files}).
+  \item[\file{debian.tar.gz}] contains all meta-information and may also contain
+    scripts to aid the installation and removal of the software. The most common
+    content of this archive is described in section \ref{subsection:meta
+    information} (p. \pageref{subsection:meta information}).
+  \item[\file{debian-binary}] contains the version of the debian standards this
+    package adheres to. This file is implicitly generated in the package building
+    process (section \ref{subsection:package building}, p. \pageref{subsection:%
+    package building}).
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Installation files %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Installation files}\label{subsection:installation files}
+The \file{data.tar.gz} archive has to contain only three installation files
+(all located in \file{/usr/share/doc/\$package}) to make it compliant
+with Debian standards: 
+\begin{description}
+  \item[copyright] is a freeform copyright notice that should contain the
+    authors of the package and under what licence the package itself is.
+  \item[changelog.gz] is the gz-compressed (maximum compression) upstream
+    changelog as distributed by the author(s). Since this file doesn't come from
+    the package maintainer, it is also freeformed.
+  \item[changelog.Debian.gz] is also a gz-compressed changelog, but describes
+    the changes made to the debian package. Every version of the package
+    \emph{must} have an entry here. Since this file is used by frontends to
+    apt/dpkg, it has to follow a strict syntax. The exact syntax is given in
+    EBNF-form in \lstlistingname{} \ref{code:changelog-debian syntax} (p.
+    \pageref{code:changelog-debian syntax}) and a real-world example is given in
+    \lstlistingname{} \ref{code:changelog-debian} (p. \pageref{code:changelog-%
+    debian}). 
+\end{description}
+
+\begin{lstlisting}[label=code:changelog-debian syntax, caption={Syntax of the
+changelog.Debian file in EBNF notation}]
+file      = entry { , entry } ;
+entry     = header , { newline , } desc_line , 
+	{ desc_line , } { newline , } signature ;
+header    = ? package ?, " (" , version , ") " , 
+	{ ? dist ? } , "; urgency=" , urgency , "\n" ;
+newline   = "\n" ;
+desc_line = "  " , ? freeformed text ? , "\n";
+signature = " --" , ? name ? , " <", ? email ? , ">  " ,
+	? RFC822 date ? , "\n";
+version   = ? software version ? , "-" , 
+	? package version ? ;
+urgency   = "low" | "medium" | "high" | "emergency" | 
+	"critical" ;
+\end{lstlisting}
+
+\begin{lstlisting}[label=code:changelog-debian,caption={Example of the
+changelog.Debian file}]
+tunix-artwork (1.0.0-1) tunix; urgency=low
+  
+  * something has changed
+    this is a freeformed text, so the asterisks are
+    only there for convinience.
+  * even more change details
+ 
+ 
+ -- Mathias Ertl <m@ab.at>  Tue, 15 Aug 2006 17:46:22 +0200
+\end{lstlisting}
+The date in any changelog entry has to be in RFC822 format, you can get the
+current date in this format with the tool \cmd{822-date}. The email-adress
+in \lstlistingname{} \ref{code:changelog-debian} is kept deliberatly short to
+fit the available page-width, but should in reality match the entry in
+\file{DEBIAN/control}. Take special care that there are actually \emph{two}
+spaces between the email-adress and the date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta information %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Meta information}\label{subsection:meta information}
+Binary packages have to contain several files of meta information. In a finished
+binary package these files end up in \file{control.tar.gz}, for the process
+of building the package, the files should go into the directory 
+\file{DEBIAN/} (as opposed to the directory \file{debian/} for source
+packages). A complete list of files that can go into the
+\file{DEBIAN/} directory is available at \cite{debian policy manual}, this
+section describes the most important ones (and how to create them manually).
+
+\subsubsection{control}
+\label{control}
+The file \file{DEBIAN/control} is actually the most important one, as it
+contains all the information necessary for the package building process,
+dependency resolution (with apt), etc.. It is a plain text file that contains a
+series of data fiels. Each data field contains a field label, a colon (':') and
+the value of that field. If a value spans multiple lines, new lines must begin
+with a space or a tab. The following list lists the most important field names
+as well as what they should contain:
+\begin{description}
+  \item[Package:] (mandatory) The name of the package
+  \item[Version:] (mandatory) Version including package version
+  \item[Architecture] (mandatory) Architecture the package is for. May also be
+    the special string "all" to indicate a platform-independent package.
+  \item[Maintainer:] (mandatory) The package maintainers name and email adress.
+    The adress must be inside the usual brackets ("<foo@bar.com>").
+  \item[Description:] (mandatory) This is a multi-line field, where the first
+    line gives the single line synopsys and a multi-line extended description.
+    Lines only containing a '.' (of course the leading whitespace still has to
+    be present) are treated as paragraph delimiter.
+  \item[Depends et al] If a package depends on other packages you can specify
+    them using \emph{Depends} for packages required by this package to run,
+    and/or \emph{Pre-Depends} if packages are required during the setup process
+    of this package. It is possible to narrow down the version of the required
+    packages in a regular expression style syntax. For example, it is possible,
+    to specify that package A depends on package B, which must be at least of
+    version 1.0. You do not have to declare dependencies to packages which are
+    marked with the \emph{Essential} field. 
+  \end{description}
+The \lstlistingname{} \ref{code:control file} (p. \pageref{code:control file})
+gives a working example.
+\begin{lstlisting}[label=code:control file, caption=Example of a DEBIAN/control
+file, float=ht]
+Package: tunix
+Version: 1.0.1-1
+Architecture: all
+Depends: tunix-artwork, tunix-software, tunix-keyring,
+ tunix-foo (>= 1.0.0)
+Suggests: tunix-extras
+Installed-Size: 8
+Section: base
+Priority: optional
+Maintainer: Mathias Ertl <mati@pluto.htu.tuwien.ac.at>
+Description: single line description
+ .
+ Multi line description. This will be
+ printed as a single paragraph
+ .
+ And this is the next paragraph.
+\end{lstlisting}
+
+\subsubsection{md5sums}
+This file simply contains checksums for all installation files. Before you
+finally create the package and all installation files are in their final state,
+you have to recreate the md5sums so the checksums are correct. The
+\lstlistingname{} \ref{code:md5sums} (p. \pageref{code:md5sums}) explains how to
+recreate these sums "by hand".
+\begin{lstlisting}[caption=Recreating md5sums for DEBIAN/md5sums,
+label=code:md5sums, float=ht]
+$\sim$/work/tunix-1.0.1/ $\$$ ls
+DEBIAN  usr
+$\sim$/work/tunix-1.0.1/ $\$$ rm -f DEBIAN/md5sums
+$\sim$/work/tunix-1.0.1/ $\$$ find * -type f | grep --invert-match\ 
+	"^DEBIAN[$\$$/]" | xargs md5sum > DEBIAN/md5sums
+\end{lstlisting}
+
+\subsubsection{Maintainer scripts}
+A package might require additional steps in the (un)installation process besides
+unpacking the files found in \file{data.tar.gz} and installing all required
+packages. For example, most daemons (i.e. apache) normally do not
+run as root but have their own system user (called \emph{www-data} for apache)
+that has to be added during the installation process and removed during the
+uninstallation process. Some packages (i.e. java) also prompt for the agreement
+to a license. More specialized code might be necessary if a package has to be
+updated by apt, for example, if the syntax of the configuration file changes.
+You can write up to four scripts for this purpose with the self-describing names
+\cmd{preinst}, \cmd{postinst}, \cmd{prerm} and \cmd{postrm}. These scripts can
+be an executable in binary format or a script written in any language. They do
+have to fulfill certain standards:
+\begin{description}
+  \item[Exit status:] The exit status returned must be zero if all went well and
+    non-zero if any error occured.
+  \item[Idempotency:] The scripts must not throw an error or harm the users
+    system if called repeatedly. 
+  \item[Dependencies:] All programs used in the scripts (as well as the
+    interpreter for the script) must be listed in the Pre-Depends field of the
+    control file (see chapter \ref{control}, p. \pageref{control}).
+  \item[Language:] Any script-language \emph{works}, but it is recommended to
+    rely on a language where the interpreter is an essential package and thus
+    installed on every debian-based system to keep dependencies to a minimum.
+\end{description}
+The scripts are called with different paramaters, depending if the current
+installation process is a new installation, an upgrade, a removal, etc..
+Since there is a plethora of possible parameters these scripts can be called
+with, and most of them were never used for the \tunix project, please refer to
+\cite{debian policy manual} for a complete documentation.
+
+\subsubsection{Conffiles}
+If your package includes configuration files that might be changed by the user,
+you should list them, one per line, in \file{DEBIAN/conffiles}. If a file
+is listed there, dpkg will ask the user what to do if a conffile was changed and
+a new version is available. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package building & quality assurance %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Package building \& quality assurance}\label{subsection:package %
+building} Once all the files are in place the package building can begin. Code
+example \ref{code:building filelist} (p. \pageref{code:building filelist}) shows
+all necessary files.  This package also includes a postinst and a prerm script
+as well as a binary called "something" that will be installed into
+\file{/usr/bin/}.
+\begin{lstlisting}[label=code:building filelist,caption=A directory ready
+to be made into a .deb package, float=ht]
+$\sim$/work $\$$ find -type f new/
+new/DEBIAN/control
+new/DEBIAN/postinst
+new/DEBIAN/prerm
+new/usr/share/doc/new/changelog
+new/usr/share/doc/new/changelog.Debian
+new/usr/share/doc/new/copyright
+new/usr/bin/something
+\end{lstlisting}
+
+Once you know everything is there, some preparations have to be done:
+\begin{itemize}
+  \item compress files found in \file{usr/share/doc}
+  \item recreate the md5sums
+\end{itemize}
+Code example \ref{code:building preparation} (p. \pageref{code:building
+preparation}) shows the commands necessary to make the directory ready:
+\begin{lstlisting}[label=code:building preparation,caption=prepare a directory for
+package creation, float=ht]
+# compress changelog and changelog.Debian
+$\sim$/work $\$$ cd new/usr/share/doc/new
+$\sim$/work/new/usr/share/doc/new $\$$ ls
+changelog changelog.Debian copyright
+$\sim$/work/new/usr/share/doc/new $\$$ gzip --best changelog
+$\sim$/work/new/usr/share/doc/new $\$$ gzip --best changelog.Debian
+$\sim$/work/new/usr/share/doc/new $\$$ ls
+changelog.gz changelog.Debian.gz copyright
+
+# recreate md5sums
+$\sim$/work/new/usr/share/doc/new $\$$ cd $\sim$/work/new
+$\sim$/work/new $\$$ rm -f DEBIAN/md5sums
+$\sim$/work/new $\$$ find * -type f | grep --invert-match \ 
+	"^DEBIAN[$\$$/]" | xargs md5sum > DEBIAN/md5sums
+$\sim$/work/new/new $\$$ cd $\sim$/work
+\end{lstlisting}
+
+Once all the preparations are done, building the package takes only the single
+command found in line 2 of \lstlistingname{} \ref{code:building} (p.
+\pageref{code:building}). After successfully building  the package, you should
+test its adherence to debian standards using the tool \cmd{lintian}. If it
+produces a warning you may ignore it if you have a good reason, but errors must
+be fixed. If the error-code produced by lintian is not clear, you can get
+further information with \cmd{lintian-info -t \$error\_code}, where 
+\$error\_code is the code produced by \cmd{lintian}.
+\begin{lstlisting}[label=code:building,caption=create a package, float=ht]
+# actually build the package:
+$\sim$/work $\$$ dpkg-deb --build new/ new_1.0.0-1_i386.deb
+$\sim$/work $\$$ lintian new_1.0.0-1_i386.deb
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apt repositories %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Apt repositories}\label{chapter:apt repositories}
+The .deb packages created in the process described above are nice, but in order
+to be able to install them via \cmd{apt}, they have to be put into a
+(possibly remote) \emph{apt repository}. A repository is a special directory hierarchy
+with a few special files containing (meta)data. A repository might have packages
+for multiple distributions, multiple components and  multiple architectures.
+Complete documentation (especially on signing packages) is hard to come by, the 
+official (but incomplete) tutorial is the Debian Repository
+HOWTO\cite{debian repository howto}.
+
+While creating .deb source packages wasn't described in the previous chapter,
+creating an apt repository for source packages is described as well, since it
+almost comes for free when creating a repository for binary packages.
+
+Whenever paths are given, they are relative to the repository root and \$dist,
+\$comp and \$arch denote the respective levels in the repository layout as
+outlined by subsection \ref{directory structure} (p. \pageref{directory
+structure}).
+
+The commands given here are 100\% scriptable. The whole maintenance process is
+taken care of by the script \cmd{repo-maint.sh} found in the scripts-directory
+of the \tunix homepage.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Directory structure %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Directory structure}\label{directory structure}
+The basic directory structure of an apt repository is rather simple. 
+The \file{dists/} directory contains directories for
+each distribution (\$dist) this repository has packages for, each in turn
+includes one or more directories representing components (\$comp) that may have
+source packages and binary packages (\$arch) for any number of distributions. A
+real-world example can be found in \lstlistingname{} \ref{code:apt-repo directories}
+(p. \pageref{code:apt-repo directories}).
+
+\$dist may be any distribution you release packages for, \$comp is used to
+divide the distribution into independent components. The official Ubuntu
+repositories use "main", "universe" and "multiverse", Debian uses "free",
+"non-free" and "contrib". Within every component there can be a \file{source/}
+directory and/or directories of the form \file{binary-} with the CPU
+architecture as a suffix. Since \tunix has only few packages, there is only one
+distribution ("tunix") and the component "main", with packages for amd64 and
+i386.
+
+You also need a directory for all your .deb packages. It can have any name and
+can be located anywhere. In the following chapters the directory \file{all} in
+\file{dists/\$dist/\$comp} is used.
+
+\begin{lstlisting}[label=code:apt-repo directories,caption=Basic structure of an
+apt repository, float=ht]
+(repository root)
+|
++- dists
+   |
+   +- tunix
+     |
+     +- main
+	|
+	|-all
+	|-binary-i386
+	|-binary-amd64
+	|-source
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%
+%%% Metadata %%%
+%%%%%%%%%%%%%%%%
+\subsection{Metadata}
+\subsubsection{Override file}
+The override file is optional but recommended. It contains information the
+package maintainer wouldn't know but the distributor would. The
+syntax is easy: It lists, one per line, all packages together with its category
+and priority. The category might be anything the distributor thinks of, the
+priority might be one of "extra", "optional", "standard", "important" or
+"required". A working example for three
+packages can be found in \lstlistingname{} \ref{code:override} (p.
+\pageref{code:override}).
+\begin{lstlisting}[label=code:override,caption=override file, float=ht]
+dia-deskfile standard gnome
+eprog-io optional misc
+tunix required base
+\end{lstlisting}
+
+The filename and location of the file is actually up to the user, though the
+script \cmd{repo-maint.sh} assumes the file is in \file{dists/\$dist/\$comp/}
+and is called \file{override.\$dist.\$comp}.
+
+\subsubsection{Sources/Packages file}
+The most important file of the apt repository is the list of packages available
+in the repository. For source repositories the file is named \file{Source}, for
+binary repositories the file is named \file{Packages} and must be present in
+every \$arch directory. The file is a detailed list of all packages and their
+meta-information (composed of the packages control-file and the repositories
+override-file) and should be available as a plain-text file and in gzip-
+and bzip2-compressed form.
+
+These files are created using \cmd{dpkg-scansources} (for \file{Sources}) 
+respectively \cmd{dpkg-scanpackages} (for \file{Packages}). You can find a
+demonstration (that would work in the \tunix apt repository) of the necessary
+commands in \lstlistingname{} \ref{code:packages} (p. \pageref{code:packages}).
+
+\begin{lstlisting}[label=code:packages,caption=Creating Sources and Packages
+files,float=ht]
+# create Sources file
+/apt/dists/tunix/main $\$$ dpkg-scansources all \
+	override.tunix.main > source/Sources
+/apt/dists/tunix/main $\$$ cat source/Sources | gzip -9c > \
+	source/Sources.gz
+/apt/dists/tunix/main $\$$ cat source/Sources | bzip2 -z9 > \
+	source/Sources.bz2
+
+# create packages file for binary-i386
+/apt/dists/tunix/main $\$$ dpkg-scanpackages -ai386 all \
+	override.tunix.main > binary-i386/Packages
+/apt/dists/tunix/main $\$$ cat binary-386/Packages | \
+	gzip -9c > binary-i386/Packages.gz
+/apt/dists/tunix/main $\$$ cat binary-i386/Packages | \
+	bzip2 -z9 > binary-i386/Packages.bz2
+\end{lstlisting}
+
+\subsubsection{Release file}
+There are actually two different kinds of \file{Release} files. One is located in
+\file{dists/\$dist/\$comp/\$arch/} and contains checksums for the
+\file{Packages} respectivly \file{Sources} file in compressed and uncompressed
+form. The other one is located in \file{dists/\$dist} and contains checksums for all
+\file{Sources}, \file{Packages} and \file{Releases} in its subdirectories. Both
+have a common static head. 
+
+The demonstration found in \lstlistingname{} \ref{code:release file} (p.
+\pageref{code:release file}) creates a \file{Release} file (the syntax is the
+same for all files). The \cmd{grep} is
+necessary so the file doesn't include a (wrong) checksum of itself. It is
+assumed that the common static head is found in \file{dists/$\$$dist/Release.head}.
+\begin{lstlisting}[label=code:release file, caption=Creating a Release file,
+float=ht]
+/apt/dists/tunix $\$$ export release="main/source/Release"
+/apt/dists/tunix $\$$ cat Release.head > $\$$release
+/apt/dists/tunix $\$$ echo "Architecture: source" >> $\$$release
+/apt/dists/tunix $\$$ echo "Component: main" >> $\$$release
+/apt/dists/tunix $\$$ apt-ftparchive release main/source/ \
+	| grep --invert-match \
+		"^ [0-9a-z]* *[0-9]* Release$\$$" \
+	>> $\$$release
+\end{lstlisting}
+
+\subsubsection{Signing the repository}
+For added security the \file{Release} files have to be signed using GnuPG. If
+the files are not singed, the user will get a warning when installing packages
+from the repository. The demonstration in \lstlistingname{} \ref{code:gpg
+signing} (p. \pageref{code:gpg signing}) assumes that the public and private key
+is to the signer is available, the key used for signing is foo@bar.com and the
+password for that key is "gpgpass".
+\begin{lstlisting}[label=code:gpg signing, caption=Signing a Release file,
+float=ht]
+/apt/dists/tunix $\$$ echo "gpgpass" | \
+	gpg --passphrase-fd 0 -a -b -s -q \
+	-u "foo@bar.com" --batch -o Release.gpg Release
+\end{lstlisting}

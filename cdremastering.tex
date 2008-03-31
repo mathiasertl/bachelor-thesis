@@ -1,0 +1,260 @@
+% CD remastering for tunix.tex
+
+%%%%%%%%%%%%%%%%%%
+% CD Remastering %
+%%%%%%%%%%%%%%%%%%
+\chapter{CD remastering}\label{chapter:CD remastering}
+CD remastering describes the process of disassembling an existing live-CD,
+modifying it to your needs and reassembling it again. This chapter describes
+what is required for the process, the contents of the live-CD, how to unpack it,
+modify with it, and put it back together again.
+
+%%%%%%%%%%%%%%%%
+% Requirements %
+%%%%%%%%%%%%%%%%
+\section{Requirements}
+The process has rather high requirements:
+\begin{description}
+ \item[Hardware:] $\qquad$
+   \begin{itemize}
+    \item A fast CPU and lots of RAM is required. Building a SquashFS with a
+      Pentium-M 1.5 GHz and 512MB RAM takes about half an hour.
+    \item You need even more RAM when testing your live-CD on a virtual
+      machine. 2GB RAM is recommended.
+    \item The harddisc needs to be large (overall disc-requirement is at least
+      5GB at any time) and fast (Building an ISO requires little CPU-power and
+      is is mainly dependent on HDD-speed).
+   \end{itemize}
+ \item[Software:] $\qquad$
+   \begin{itemize}
+     \item You have to have Linux with a kernel with SquashFS support and the
+       appropriate filesystem-tools. Under Ubuntu, everything can be installed
+       with the packages squashfs-tools and squashfs-source.
+     \item Technically not absolutely necessary, but you \emph{will} save a lot
+       of time and many burned CDs if you have a virtual machine on hands.
+       Qemu\footnote{http://fabrice.bellard.free.fr/qemu/} or the non-free
+       VMware\footnote{http://www.vmware.com/} are just some alternatives.
+   \end{itemize}
+ \item[Knowledge:] $\qquad$
+   \begin{itemize}
+     \item Very good shell-scripting knowledge. Recommended reading is available at
+     	\cite{bash-intro} and \cite{bash-advanced}.
+     \item The ability to live with very bad documentation. Some of the tools
+       described and used here are \emph{poorly} documented
+   \end{itemize}
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%
+% Live-CD contents %
+%%%%%%%%%%%%%%%%%%%%
+\section{Live-CD contents}
+The \tunix live-CD contains mainly the following files and directories relevant
+to the process of CD remastering:
+\begin{description}
+  \item[\file{isolinux/}] contains the bootloader
+  \item[\file{casper/}] contains all following files:
+  \begin{description}
+    \item[\file{vmlinuz}] and \textbf{\file{initrd.gz}} is the kernel and RAM-disc
+      the live-CD boots from.
+    \item[\file{filesystem.squashfs}] is the root filesystem used by the kernel
+      mentioned above.
+    \item[\file{filesystem.manifest}] contains a list of packages installed on the
+      root filesystem mentioned above.
+    \item[\file{filesystem.manifest-desktop}] contains a list of packages that the
+      installer will install on the harddisc. For practical use, this list is a
+      subset of the list in filesystem.manifest.
+  \end{description}
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Overview of the process %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview of the process}
+The process can be easily summarized by the following steps:
+\begin{itemize}
+  \item Dump the ISO to the harddisc
+  \item Modify the contents of the ISO filesystem (*)
+  \item Unpack the SquashFS file (requires up to 2GB space!)
+  \item Chroot into the SquashFS (this is the environment the live-CD will boot
+    into).
+  \item Modify the contents of the SquashFS filesystem (*)
+  \item Rebuild the manifest-files
+  \item Rebuild SqashFS
+  \item Rebuild ISO
+  \item Test ISO in a virtual machine
+\end{itemize}
+The two steps marked with a "(*)" represent the steps that actually modify the
+CD. You don't \emph{have} to modify either the ISO or the SquashFS, but doing
+neither seems somewhat pointless. The whole process is, by the way, very
+scriptable.
+
+The whole process is described here using example shell commands. But the entire
+process was automated into shell scripts. The scripts can be found in the
+scripts-directory of the \tunix-homepage, here is an overview of what they do:
+\begin{description}
+  \item[\file{make-env.sh}] dumps the ISO, unpacks the SquashFS, creates all
+    other scripts mentioned here as well as a file \file{.settings} that is
+    included by these scripts so they can share some common settings.
+  \item[\file{chroot.sh}] chroots into the unpacked SquashFS, does some
+    cleanup after the user exits the chrooted shell and finally recreates the
+    manifest-files of the SquashFS.
+  \item[\file{mksquashfs.sh}] rebuilds the SquashFS
+  \item[\file{mkisofs.sh}] rebuilds md5 checksums and creates an ISO that is
+    ready to boot. The ISO is
+    named \file{tunix\_\$date-r\$N.iso} where \$date is the output of the
+    command \cmd{date ---iso-8601} and \$N is an auto-incremented
+    revision-number.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Detailed description of the process %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Detailed description of the process}
+This section describes the CD remastering process in more detail. The code
+snippets provided include a prompt starting with the working directory followed
+by a '\$' (normal user) or a '\#' (root user) depending on the rights required.
+A line starting with a '\#' is considered a comment\footnote{Note that bash
+usually considers everything starting from the first '\#' a comment. The syntax
+that a line starting with a '\#' is a comment resembles the syntax of a shell
+script and is used to avoid confusion with a root shell-prompt.}. The
+base-directory is always the directory \file{$\sim$/work}.
+
+%%%%%%%%%%%%%%%%
+% Preparations %
+%%%%%%%%%%%%%%%%
+\subsection{Preparations}
+This section assumes you have already have the ISO image you want to modify. The
+code-snippet found in \lstlistingname{} \ref{code:prepare} (p. \pageref{code:prepare})
+mounts the ISO image \file{original.iso} as a loop-device, copies its
+contents to the directory \file{live-cd/} and, in the second part, unpacks
+the SquashFS to the directory \file{squashfs/}. 
+\begin{lstlisting}[caption={Unpacking the ISO and SquashFS filesystems},float=ht,label=code:prepare]
+# unpack ISO:
+$\sim$/work $\$$ mkdir tmp/
+$\sim$/work $\$$ mount -t iso9660 -o loop ubuntu.iso tmp/
+$\sim$/work $\$$ mkdir live-cd/
+$\sim$/work $\$$ cp -a tmp/. live-cd/
+$\sim$/work $\$$ chmod -R u+w live-cd/
+$\sim$/work $\$$ umount tmp/
+
+# unpack SquashFS:
+$\sim$/work $\$$ mount -t squashfs -o loop,ro \
+	live-cd/casper/filesystem.squashfs tmp/
+$\sim$/work $\$$ cp -a tmp/. squashfs/
+$\sim$/work $\$$ umount tmp/
+$\sim$/work $\$$ rmdir tmp/
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chrooting into the live-CD environment %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Chrooting into the live-CD environment}
+If you want to modify the live-CD and what will be installed on the
+computer if the user chooses to install it, you will want to chroot, or
+\emph{change root}, into the unpacked SquashFS filesystem that was unpacked in
+the previous chapter. Chrooting means executing a command (and may be an
+interactive shell) with a different root-directory than the "real" one. This
+allows you to use all the tools available on the live-CD to modify it to your
+needs. The necessary commands are described in \lstlistingname{} \ref{%
+code:chroot} (p. \pageref{code:chroot}). The last line is there to emphasize
+that 
+\begin{itemize}
+\item all paths (relative or absolute), including targets of symlinks, now refer
+to destinations inside the new root directory.
+\item you effectively have the rights of the root user in that environment,
+since all files (including programs with the suid-bit set) are owned by you.
+\end{itemize}
+
+A word of warning: The tools used in the chrooted environment will behave
+like they would on the live-CD or the installed system\ldots{} almost. You have
+to keep in mind that even if you chrooted into the live-CD, you never
+\emph{booted} from it. All the \emph{regular files} might be the same as on the
+live-CD, but the filesystems in \file{/dev}, \file{/proc} and \file{/sys} are
+dynamically generated at every boot and differ depending on the hardware of the
+computer. The behaviour of programs is also influenced by the environment, e.g.
+environment variables, kernel-version, etc., and only some of that can be
+reliably emulated. For example, it would be problematic to install packages that
+install new kernel modules, if the kernel-version on the live-cd is not
+\emph{exactly} that of the host, since the kernel-version reportet by
+\cmd{uname -a} is still that of the host and not that of the live-CD.
+The code found in \lstlistingname{} \ref{code:chroot} (p. 
+\pageref{code:chroot}) also shows a few preparations necessary to get all the
+tools in the chrooted environment to work.\\
+
+\begin{lstlisting}[caption={Chrooting into the SquashFS filesystem},float=ht, %
+label=code:chroot]
+# preparations:
+$\sim$/work $\$$ cp /etc/resolv.conf squashfs/etc/
+$\sim$/work $\$$ mount -t proc -o bind /proc squashfs/proc
+$\sim$/work $\$$ mount -t udev -o bind /dev squashfs/dev
+
+# actual chroot:
+$\sim$/work $\$$ chroot new/ /bin/bash
+/ # 
+\end{lstlisting}
+
+After modifying the SquashFS to your needs, you should do some
+cleaning up\footnote{Completely cleaning up is only necessary if you want to know
+the exact size of the final ISO or want to create a final release}. The
+command-sequence shown in \lstlistingname{} \ref{code:chroot-cleanup} (p.
+\pageref{code:chroot-cleanup}) starts in the chrooted environment and exits into
+the real environment on line 3 with the command \cmd{exit}.
+\begin{lstlisting}[caption={Cleanup the SquashFS},float=ht,%
+	label={code:chroot-cleanup}]
+/ # apt-get clean
+/ # rm /etc/resolv.conf
+/ # exit
+$\sim$/work $\$$ umount squashfs/proc squashfs/dev
+\end{lstlisting}
+\todo{Quite a few things seem unclear. A lot of stuff is packed into packages,
+but some stuff on TUn!x wasn't (e.g. vpnc.conf and screenrc). The installer
+installs only (?) the packages listed in the manifest-desktop file - or not?
+or does it also install files from the live-cd?}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% Rebuild the live-CD %
+%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Rebuild the live-CD}
+All that is left to do now is to rebuild the SquashFS and the ISO filesystems so
+you can test them on your virtual machine. Before you can rebuild the ISO
+filesystem, you have to update the manifest-files (of the SquashFS) and
+md5-checksums of all files on the ISO. The process is described in \lstlistingname{}
+\ref{code:rebuild} (p. \pageref{code:rebuild}). Note that rebuilding the SquashFS
+filesystem takes especially long - consider getting a cup of coffee.
+
+\begin{lstlisting}[caption={Rebuiling the live-CD},float=ht,label={code:rebuild}]
+# rebuild the manifest files:
+$\sim$/work $\$$ chroot squashfs/ dpkg-query -W --showformat=\
+	'${Package} ${Version}\n' > \
+	"live-cd/casper/filesystem.manifest"
+$\sim$/work $\$$ cat > /tmp/tmp.control <<FOO
+/casper/d
+/libdebian-installer4/d
+/os-prober/d
+/ubiquity/d
+/ubuntu-live/d
+/user-setup/d
+FOO 
+$\sim$/work $\$$ sed -f /tmp/$$.control < \
+	"live-cd/casper/filesystem.manifest" > \
+	"live-cd/casper/filesystem.manifest-desktop"
+$\sim$/work $\$$ rm /tmp/tmp.control
+
+# recreate squashfs
+$\sim$/work $\$$ rm live-cd/casper/filesystem.squashfs
+$\sim$/work $\$$ cd squashfs/
+$\sim$/work/squashfs $\$$ mksquashfs . \
+	../live-cd/casper/filesystem.squashfs
+
+# recreate md5 checksums:
+$\sim$/work $\$$ cd live-cd
+$\sim$/work/live-cd $\$$ find . -type f -print0 | \
+	xargs -0 md5sum | tee md5sum.txt
+
+# create ISO:
+$\sim$/work/live-cd $\$$ mkisofs -o "neues.iso" -b \
+	isolinux/isolinux.bin -c isolinux/boot.cat \
+	-no-emul-boot -boot-load-size 4 \
+	-boot-info-table -r -V "My live-CD" \
+	-cache-inodes -J -l live-cd
+\end{lstlisting}
