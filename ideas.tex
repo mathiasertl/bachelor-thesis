@@ -1,5 +1,8 @@
 % ideas for tunix.tex
 
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Some ideas for TUn!x %
+%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Some ideas for \tunix}
 Several different ideas come up when thinking of a live-CD specialized for a
 specific environment. This chapter lists what we could think of, but only some
@@ -24,13 +27,41 @@ Several ideas are presented on the next pages and only some of them where
 implemented. If they were implemented, you can find documentation on it in the
 following chapters, if not, a reason is given.
 \begin{description}
-  \item[apt-repository] The core of any Debian-based distribution is a central
-    package management-system. 
-  \item[community] (wiki, forum)
-  \item[applications] java, postgresql, dia
-  \item[offline documentation] studienplan, lageplaene
-  \item[localized applications] firefox bookmars, mail-client, vpnc
-  \item[missing applications] sysv-rc-conf, latex, ntfs-support
+  \item[apt-repository] The core of any Debian-based distribution is Apt \& DPKG,
+    a central package management-system. Using an apt-repository has the
+    advantage that updates to whatever makes \tunix differ from Ubuntu can be
+    made in a central and automated matter, fully integrated into the
+    distribution.
+  \item[community] A community providing tipps, tricks and most importantly
+    feedback to the developers is a great asset to any software. Computer
+    Science students have a large forum\footnote{http://www.informatik-forum.at}
+    where a \tunix subforum is available. The \tunix
+    homepage\footnote{http://www.informatik.tuwien.ac.at/tunix} is a Wiki that
+    allows collaborative writing of documentation. 
+
+    Unfortunatly, the \tunix project doesn't really have the resources to
+    "maintain" a community. The developers implement \tunix as a summer project,
+    but users use it at the start of the semester. 
+  \item[applications] All students use some software that doesn't come
+    preinstalled with Ubuntu. Having this software preinstalled is the
+    primary goal for \tunix.
+  \item[offline documentation] Some stuff relevant for students could be
+    directly on the CD. This could include course descriptions, building
+    plans\todo{aeh, stimmt das so? "Gebaeudeplaene"} and important legal
+    documents.
+  \item[localized applications] Software could be preconfigured for typical
+    use in a TU-Environment. The webbrowser could have localized bookmarks,
+    the mail client could be predconfigured for the students email address,
+    the VPN-client could have configuration files for the TU wireless
+    network, and so on. Of the aforementioned, only the configuration of
+    the mail client wasn't implemented.
+  \item[missing applications] Some more applicitions are simply missing in
+    Ubuntu. Primarily, this includes Latex, subversion, ntfs-support,
+    various compilers, etc. \tunix has sysv-rc-conf (a small ncurses-based
+    programm that eases startup-configuration) and gajim (a good Jabber
+    instant messaging client) preinstalled. Other programs weren't
+    installed due to space-constraints (Latex) or pre-alpha status of the
+    software (NTFS support).
   \item[individial look]
 \end{description}
 
