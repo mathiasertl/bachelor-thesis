@@ -29,7 +29,7 @@ The process has rather high requirements:
    \begin{itemize}
      \item You have to have Linux with a kernel with SquashFS support and the
        appropriate filesystem-tools. Under Ubuntu, everything can be installed
-       with the packages squashfs-tools and squashfs-source.
+       with the packages \pkg{squashfs-tools} and \pkg{squashfs-source}.
      \item Technically not absolutely necessary, but you \emph{will} save a lot
        of time and many burned CDs if you have a virtual machine on hands.
        Qemu\footnote{http://fabrice.bellard.free.fr/qemu/} or the non-free
@@ -206,10 +206,7 @@ the real environment on line 3 with the command \cmd{exit}.
 / # exit
 $\sim$/work $\$$ umount squashfs/proc squashfs/dev
 \end{lstlisting}
-\todo{Quite a few things seem unclear. A lot of stuff is packed into packages,
-but some stuff on TUn!x wasn't (e.g. vpnc.conf and screenrc). The installer
-installs only (?) the packages listed in the manifest-desktop file - or not?
-or does it also install files from the live-cd?}
+%\todo{}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Rebuild the live-CD %

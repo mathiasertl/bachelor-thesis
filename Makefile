@@ -1,4 +1,4 @@
-all:
+all: clean
 	pdflatex tunix.tex
 	pdflatex tunix.tex
 	evince tunix.pdf &
