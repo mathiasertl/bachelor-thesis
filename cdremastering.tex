@@ -31,7 +31,7 @@ The process has rather high requirements:
        appropriate filesystem-tools. Under Ubuntu, everything can be installed
        with the packages \pkg{squashfs-tools} and \pkg{squashfs-source}.
      \item Technically not absolutely necessary, but you \emph{will} save a lot
-       of time and many burned CDs if you have a virtual machine on hands.
+       of time and many burned CDs if you have a virtual machine at hands.
        Qemu\footnote{http://fabrice.bellard.free.fr/qemu/} or the non-free
        VMware\footnote{http://www.vmware.com/} are just some alternatives.
    \end{itemize}
@@ -48,7 +48,7 @@ The process has rather high requirements:
 % Live-CD contents %
 %%%%%%%%%%%%%%%%%%%%
 \section{Live-CD contents}
-The \tunix live-CD contains mainly the following files and directories relevant
+The \tunix{} live-CD contains mainly the following files and directories relevant
 to the process of CD remastering:
 \begin{description}
   \item[\file{isolinux/}] contains the bootloader
@@ -152,7 +152,7 @@ $\sim$/work $\$$ rmdir tmp/
 If you want to modify the live-CD and what will be installed on the
 computer if the user chooses to install it, you will want to chroot, or
 \emph{change root}, into the unpacked SquashFS filesystem that was unpacked in
-the previous chapter. Chrooting means executing a command (and may be an
+the previous chapter. Chrooting means executing a command (that may be an
 interactive shell) with a different root-directory than the "real" one. This
 allows you to use all the tools available on the live-CD to modify it to your
 needs. The necessary commands are described in \lstlistingname{} \ref{%
@@ -166,7 +166,7 @@ since all files (including programs with the suid-bit set) are owned by you.
 \end{itemize}
 
 A word of warning: The tools used in the chrooted environment will behave
-like they would on the live-CD or the installed system\ldots{} almost. You have
+as they would on the live-CD or the installed system\ldots{} almost. You have
 to keep in mind that even if you chrooted into the live-CD, you never
 \emph{booted} from it. All the \emph{regular files} might be the same as on the
 live-CD, but the filesystems in \file{/dev}, \file{/proc} and \file{/sys} are
@@ -175,7 +175,7 @@ computer. The behaviour of programs is also influenced by the environment, e.g.
 environment variables, kernel-version, etc., and only some of that can be
 reliably emulated. For example, it would be problematic to install packages that
 install new kernel modules, if the kernel-version on the live-cd is not
-\emph{exactly} that of the host, since the kernel-version reportet by
+\emph{exactly} that of the host, since the kernel-version reported by
 \cmd{uname -a} is still that of the host and not that of the live-CD.
 The code found in \lstlistingname{} \ref{code:chroot} (p. 
 \pageref{code:chroot}) also shows a few preparations necessary to get all the
@@ -219,7 +219,7 @@ md5-checksums of all files on the ISO. The process is described in \lstlistingna
 \ref{code:rebuild} (p. \pageref{code:rebuild}). Note that rebuilding the SquashFS
 filesystem takes especially long - consider getting a cup of coffee.
 
-\begin{lstlisting}[caption={Rebuiling the live-CD},float=ht,label={code:rebuild}]
+\begin{lstlisting}[caption={Rebuilding the live-CD},float=ht,label={code:rebuild}]
 # rebuild the manifest files:
 $\sim$/work $\$$ chroot squashfs/ dpkg-query -W --showformat=\
 	'${Package} ${Version}\n' > \

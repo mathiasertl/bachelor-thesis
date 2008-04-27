@@ -4,7 +4,7 @@
 %%% Package Management %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Package management}
-Debian, and thus Ubuntu, and thus \tunix is based on two package management
+Debian, and thus Ubuntu, and thus \tunix{} is based on two package management
 systems working together:
 \begin{description}
   \item[dpkg,] or Debian Package Management System, is used to locally install
@@ -30,7 +30,7 @@ in fact, the term "Debian based" is normally used to describe "based on
 dpkg/apt"\footnote{One could distinguish between "Debian based" and "dpkg/apt
 based", though. A dpkg/apt based distribution doesn't necessarily include
 packages coming from the Debian project, but Debian based distributions (hence
-the name) do. Ubuntu and thus \tunix both include a great number of debian
+the name) do. Ubuntu and thus \tunix{} both include a great number of debian
 packages.}.
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +64,7 @@ one important aspect of real-world package maintenance is left out: We don't
 explain how binary packages are automatically generated from source packages or
 how source packages in general work. This process was not required for \tunix,
 since it contains no packages that have to be compiled into a binary
-form\footnote{Almost: The \tunix Usplash image is actually a PNG image file that
+form\footnote{Almost: The \tunix{} Usplash image is actually a PNG image file that
 is compiled to a shared object, but we saw no use in creating a source package
 together with an additional repository when simply publishing the original PNG
 would do the same job.}. Therefore, the following subsections refer to binary
@@ -191,7 +191,7 @@ section describes the most important ones (and how to create them manually).
 The file \file{DEBIAN/control} is actually the most important one, as it
 contains all the information necessary for the package building process,
 dependency resolution (with apt), etc.. It is a plain text file that contains a
-series of data fiels. Each data field contains a field label, a colon (':') and
+series of data files. Each data field contains a field label, a colon (':') and
 the value of that field. If a value spans multiple lines, new lines must begin
 with a space or a tab. The following list lists the most important field names
 as well as what they should contain:
@@ -277,10 +277,10 @@ have to fulfill certain standards:
     rely on a language where the interpreter is an essential package and thus
     installed on every debian-based system to keep dependencies to a minimum.
 \end{description}
-The scripts are called with different paramaters, depending if the current
+The scripts are called with different parameters, depending on whether the current
 installation process is a new installation, an upgrade, a removal, etc..
 Since there is a plethora of possible parameters these scripts can be called
-with, and most of them were never used for the \tunix project, please refer to
+with, and most of them were never used for the \tunix{} project, please refer to
 \cite{debian policy manual} for a complete documentation.
 
 \subsubsection{Conffiles}
@@ -317,7 +317,7 @@ Once you know everything is there, some preparations have to be done:
 \end{itemize}
 Code example \ref{code:building preparation} (p. \pageref{code:building
 preparation}) shows the commands necessary to make the directory ready:
-\begin{lstlisting}[label=code:building preparation,caption=prepare a directory for
+\begin{lstlisting}[label=code:building preparation,caption=preparing a directory for
 package creation, float=ht]
 # compress changelog and changelog.Debian
 $\sim$/work $\$$ cd new/usr/share/doc/new
@@ -344,7 +344,7 @@ produces a warning you may ignore it if you have a good reason, but errors must
 be fixed. If the error-code produced by lintian is not clear, you can get
 further information with \cmd{lintian-info -t \$error\_code}, where 
 \$error\_code is the code produced by \cmd{lintian}.
-\begin{lstlisting}[label=code:building,caption=create a package, float=ht]
+\begin{lstlisting}[label=code:building,caption=creating package, float=ht]
 # actually build the package:
 $\sim$/work $\$$ dpkg-deb --build new/ new_1.0.0-1_i386.deb
 $\sim$/work $\$$ lintian new_1.0.0-1_i386.deb
@@ -364,8 +364,8 @@ Complete documentation (especially on signing packages) is hard to come by, the
 official (but incomplete) tutorial is the Debian Repository
 HOWTO\cite{debian repository howto}.
 
-While creating .deb source packages wasn't described in the previous chapter,
-creating an apt repository for source packages is described as well, since it
+Although creating .deb source packages wasn't described in the previous chapter,
+creating an apt repository for source packages is described in this chapter, since it
 almost comes for free when creating a repository for binary packages.
 
 Whenever paths are given, they are relative to the repository root and \$dist,
@@ -375,7 +375,7 @@ structure}).
 
 The commands given here are 100\% scriptable. The whole maintenance process is
 taken care of by the script \cmd{repo-maint.sh} found in the scripts-directory
-of the \tunix homepage.
+of the \tunix{} homepage.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Directory structure %%%
@@ -394,7 +394,7 @@ divide the distribution into independent components. The official Ubuntu
 repositories use "main", "universe" and "multiverse", Debian uses "free",
 "non-free" and "contrib". Within every component there can be a \file{source/}
 directory and/or directories of the form \file{binary-} with the CPU
-architecture as a suffix. Since \tunix has only few packages, there is only one
+architecture as a suffix. Since \tunix{} has only few packages, there is only one
 distribution ("tunix") and the component "main", with packages for amd64 and
 i386.
 
@@ -452,7 +452,7 @@ and bzip2-compressed form.
 
 These files are created using \cmd{dpkg-scansources} (for \file{Sources}) 
 respectively \cmd{dpkg-scanpackages} (for \file{Packages}). You can find a
-demonstration (that would work in the \tunix apt repository) of the necessary
+demonstration (that would work in the \tunix{} apt repository) of the necessary
 commands in \lstlistingname{} \ref{code:packages} (p. \pageref{code:packages}).
 
 \begin{lstlisting}[label=code:packages,caption=Creating Sources and Packages
@@ -501,10 +501,10 @@ float=ht]
 
 \subsubsection{Signing the repository}
 For added security the \file{Release} files have to be signed using GnuPG. If
-the files are not singed, the user will get a warning when installing packages
+the files are not signed, the user will get a warning when installing packages
 from the repository. The demonstration in \lstlistingname{} \ref{code:gpg
 signing} (p. \pageref{code:gpg signing}) assumes that the public and private key
-is to the signer is available, the key used for signing is foo@bar.com and the
+is available to the signer, the key used for signing is foo@bar.com and the
 password for that key is "gpgpass".
 \begin{lstlisting}[label=code:gpg signing, caption=Signing a Release file,
 float=ht]

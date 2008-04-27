@@ -3,11 +3,11 @@
 \chapter{Modifications to the live-CD}\label{chapter:modifications}
 
 \section{APT}
-The \tunix apt repository had to be integrated into the \tunix live-CD so that
+The \tunix{} apt repository had to be integrated into the \tunix{} live-CD so that
 the users will actually use the new repository. This requires only two steps:
 \begin{enumerate}
   \item sources.list: \file{/etc/apt/sources.list} has to be modified to include
-    the repository. In the \tunix distribution the file includes the
+    the repository. In the \tunix{} distribution the file includes the
     line\footnote{the domain apt.fsinf.at could have been used instead, but
     wasn't available at the time of shipping.}
     \begin{quote}deb http://pluto.htu.tuwien.ac.at/apt main\end{quote}
@@ -19,11 +19,10 @@ the users will actually use the new repository. This requires only two steps:
 \section{Mozilla Firefox}
 Mozilla Firefox, the standard webbrowser of Ubuntu/\tunix, was modified so that
 it includes bookmarks to the websites that are most important for any computer
-science student. You can very simply change the bookmarks if you use the
+science student. Changing the bookmarks is very simple if you use the
 following trick: Boot the live-CD, start Firefox, adjust the bookmarks to your
-liking and copy the bookmarks file (located at
-\file{$\sim$/.mozilla/firefox/\$something.default/bookmarks.html}, where
-\$something is a randomly generated string) to \file{/etc/firefox/profile} in
+liking and copy the bookmarks file (search for \file{bookmars.html} in
+\file{$\sim$/.mozilla/firefox/}) to \file{/etc/firefox/profile} in
 the SquashFS.
 
 \section{USplash}
@@ -47,13 +46,13 @@ positions of the index are used for which elements:\\
 1 & progress bar \\ \hline
 2 & status message of init-scripts ("[ok]" most of the time) \\ \hline
 4 & background of the progress bar \\ \hline
-8 & text on the left side of the output used by the init-scripts to tell what
+8 & text on the left side of the output used by the init-scripts to say what
 they are doing \\ \hline
 13 & error output in the text-field (to try this out: don't create any md5sums)
 \\ \hline
 \end{tabular}\\\\
 
-Next, the PNG has to be converted into an shared object file (suffix .so). This
+Next, the PNG has to be converted into a shared object file (suffix .so). This
 is achieved by converting the PNG into a bogl file (bogle is a subset of the C
 programming language) using \cmd{pngtobogl} (available in the package
 libbogl-dev) and then compiling it into a shared object file using \cmd{gcc}.
@@ -71,12 +70,12 @@ $\sim$/tunix $\$$ rm new-splash.[co]
 \end{lstlisting}
 
 Sadly, the process is not always that simple. At least in the version available
-08/2006, \cmd{pngtobogl} created a buggy file where all the first (0) and second
+08/2006, \cmd{pngtobogl} created a buggy file in which all the first (0) and second
 (1) entries in the palette were flipped, causing the picture to be partly inverted.
 This can be fixed with a few simple \cmd{sed} scripts, but is a source of
 frustration.
 
-To get the live-CD use the new image it is necessary to unpack the inital
+To get the live-CD to use the new image it is necessary to unpack the inital
 RAM-disc (\file{initrd.gz}) of the kernel found on the live-CD, replace the .so
 file and repack the initial RAM-disc. The procedure is described in
 \lstlistingname{} \ref{code:initrd live} (p. \pageref{code:initrd live}). 
@@ -126,12 +125,12 @@ $\sim$ # dpkg-reconfigure linux-image-2.6.15-23-386
 \end{lstlisting}
 
 \section{VPNC}
-Two extra configuration files for VPNC where added to the live-CD, one for use
+Two extra configuration files for VPNC were added to the live-CD, one for use
 in the WLAN of the Technical University of Vienna (\file{/etc/vpnc.wlan.conf})
 and one if you want to use VPN from outside of the university network
 (\file{/etc/vpnc.conf}).
 \begin{lstlisting}[float=ht,label=code:vpnc.conf,caption=VPNC config-file for
-use from outside of the University]
+use from outside the University]
 # this is the vpnc config file is used if you connect from
 # outside of the # Technical University, i.e. to encrypt
 # your connection over an open WLAN.
